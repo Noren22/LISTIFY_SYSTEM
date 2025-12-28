@@ -7,6 +7,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PasswordResetLinkController extends Controller
@@ -36,7 +39,18 @@ class PasswordResetLinkController extends Controller
         $token = null;
         if ($user) {
             try {
-                $token = Password::broker()->createToken($user);
+                $broker = Password::broker();
+                if (method_exists($broker, 'createToken')) {
+                    $token = $broker->createToken($user);
+                } else {
+                    // Older/alternative implementations: create token manually
+                    $token = Str::random(64);
+                    // store hashed token in password_resets table (compatible with Laravel)
+                    DB::table('password_resets')->updateOrInsert(
+                        ['email' => $user->email],
+                        ['token' => Hash::make($token), 'created_at' => now()]
+                    );
+                }
             } catch (\Exception $e) {
                 $token = null;
             }
@@ -60,7 +74,10 @@ class PasswordResetLinkController extends Controller
 
         // If throttled, allow immediate reset in local/log environments by
         // exposing the previously generated token (developer convenience).
-        if ($status == Password::RESET_THROTTLED && (app()->environment('local') || config('mail.default') === 'log')) {
+        $throttledConstName = Password::class . '::RESET_THROTTLED';
+        $throttledValue = defined($throttledConstName) ? Password::RESET_THROTTLED : 'passwords.throttled';
+
+        if ($status == $throttledValue && (app()->environment('local') || config('mail.default') === 'log')) {
             if ($token) {
                 session()->flash('password_reset_token', $token);
             }

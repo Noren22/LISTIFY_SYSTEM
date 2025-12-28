@@ -1,9 +1,7 @@
-<!-- Trigger Button -->
 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
     Delete Account
 </button>
 
-<!-- Modal -->
 <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -28,4 +26,12 @@
       </form>
     </div>
   </div>
+
+  <style>
+  .modal-body {
+     background:#161A22;
+  }
+</style>
+
 </div>
+
